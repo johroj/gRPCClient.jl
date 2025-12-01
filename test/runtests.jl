@@ -142,17 +142,17 @@ include("gen/test/test_pb.jl")
     # end
 
     @static if VERSION >= v"1.12"
-    # @testset "Response Streaming" begin 
-        N = 16
+    # @testset "Response Streaming" begin
+        N = 1000
 
         client = TestService_TestServerStreamRPC_Client(_TEST_HOST, _TEST_PORT)
 
         response_c = Channel{TestResponse}(N)
 
-        req = grpc_async_request(client, TestRequest(16, zeros(UInt64, 1)), response_c)
+        req = grpc_async_request(client, TestRequest(N, zeros(UInt64, 1)), response_c)
 
-        # We should get back 16 messages that end with their length
-        for i in 1:N 
+        # We should get back N messages that end with their length
+        for i in 1:N
             response = take!(response_c)
             @test length(response.data) == i
             @test last(response.data) == i
@@ -161,8 +161,8 @@ include("gen/test/test_pb.jl")
         grpc_async_await(req)
     # end
 
-    # @testset "Request Streaming" begin 
-        N = 16
+    # @testset "Request Streaming" begin
+        N = 1000
         client = TestService_TestClientStreamRPC_Client(_TEST_HOST, _TEST_PORT)
         request_c = Channel{TestRequest}(N)
 
@@ -174,15 +174,15 @@ include("gen/test/test_pb.jl")
 
         close(request_c)
         response = grpc_async_await(client, request)
-        
+
         @test length(response.data) == N
         for i in 1:N
             @test response.data[i] == i
         end
     # end
 
-    # @testset "Bidirectional Streaming" begin 
-        N = 16
+    # @testset "Bidirectional Streaming" begin
+        N = 1000
         client = TestService_TestBidirectionalStreamRPC_Client(_TEST_HOST, _TEST_PORT)
 
         request_c = Channel{TestRequest}(N)
@@ -202,6 +202,41 @@ include("gen/test/test_pb.jl")
 
         close(request_c)
         grpc_async_await(req)
+    # end
+
+    # @testset "Response Streaming - Small Messages" begin
+        N = 1000
+        client = TestService_TestServerStreamRPC_Client(_TEST_HOST, _TEST_PORT)
+
+        response_c = Channel{TestResponse}(N)
+
+        req = grpc_async_request(client, TestRequest(N, zeros(UInt64, 1)), response_c)
+
+        # We should get back N small messages
+        for i in 1:N
+            response = take!(response_c)
+            @test length(response.data) >= 1
+        end
+
+        grpc_async_await(req)
+    # end
+
+    # @testset "Request Streaming - Large Payloads" begin
+        N = 100
+        client = TestService_TestClientStreamRPC_Client(_TEST_HOST, _TEST_PORT)
+        request_c = Channel{TestRequest}(N)
+
+        request = grpc_async_request(client, request_c)
+
+        # Send 100 large payloads (similar to unary big test)
+        for i in 1:N
+            put!(request_c, TestRequest(1, zeros(UInt64, 32*28*224)))
+        end
+
+        close(request_c)
+        response = grpc_async_await(client, request)
+
+        @test length(response.data) == N
     # end
 
     # @testset "Don't Stick User Tasks" 
