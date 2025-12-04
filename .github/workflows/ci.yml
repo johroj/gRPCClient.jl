@@ -41,21 +41,15 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     - name: Setup Go
-      if: matrix.os != 'windows-latest'
       uses: actions/setup-go@v5
       with:
         go-version: '1.24'
     - name: Build Go gRPC Test Server
-      if: matrix.os != 'windows-latest'
       run: go build -o grpc_test_server .
       working-directory: test/go
     - name: Run Go gRPC Test Server
-      if: matrix.os != 'windows-latest'
       run: ./grpc_test_server &
       working-directory: test/go
-    - name: Setup uv
-      if: matrix.os == 'windows-latest'
-      uses: astral-sh/setup-uv@v7
     - uses: julia-actions/setup-julia@v1
       with:
         version: ${{ matrix.version }}
