@@ -6,6 +6,12 @@ using Base.Threads
 # Import the timeout header formatting function for testing
 import gRPCClient: grpc_timeout_header_val, GRPC_DEADLINE_EXCEEDED
 
+if Sys.iswindows()
+    process = run(`uv run --project ./python/ ./python/grpc_test_server.py`, wait = false)
+    finalizer(process) do x
+        kill(x)
+    end
+end
 
 function _get_test_host()
     if "GRPC_TEST_SERVER_HOST" in keys(ENV)
