@@ -6,8 +6,11 @@ using Base.Threads
 # Import the timeout header formatting function for testing
 import gRPCClient: grpc_timeout_header_val, GRPC_DEADLINE_EXCEEDED
 
-if Sys.iswindows()
-    process = run(`uv run --project ./python/ ./python/grpc_test_server.py`, wait = false)
+
+if haskey(ENV, "GITHUB_ACTIONS") && ENV["GITHUB_ACTIONS"] == true && Sys.iswindows()
+    # Run test server in background
+    process = run(pipeline(`./test/go/`; stdout, stderr), wait = false)
+    sleep(1)
     finalizer(process) do x
         kill(x)
     end
@@ -373,7 +376,7 @@ include("gen/test/test_pb.jl")
     @testset "Deadline - Very short timeout" begin
         # Test with an extremely short deadline that might timeout
         # Note: This test is timing-sensitive and might be flaky
-        client = TestService_TestRPC_Client(_TEST_HOST, _TEST_PORT; deadline = 0.000000001)
+        client = TestService_TestRPC_Client(_TEST_HOST, _TEST_PORT; deadline = 0.00000001)
 
         # Try to make a request - it might timeout depending on server response time
         try
