@@ -9,7 +9,7 @@ import gRPCClient: grpc_timeout_header_val, GRPC_DEADLINE_EXCEEDED
 
 if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_GO_SERVER") && ENV["JULIA_GRPCCLIENT_TEST_START_GO_SERVER"] == "yes"
     # Run test server in background
-    cmd = if Sys.iswindows() && VERSION < 1.10
+    cmd = if Sys.iswindows() && VERSION <= v"1.10"
         cmd = `cmd ./go/grpc_test_server`
     else
         cmd = `./go/grpc_test_server`
