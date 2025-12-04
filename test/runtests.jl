@@ -7,7 +7,7 @@ using Base.Threads
 import gRPCClient: grpc_timeout_header_val, GRPC_DEADLINE_EXCEEDED
 
 
-if haskey(ENV, "GITHUB_ACTIONS") && ENV["GITHUB_ACTIONS"] == true && Sys.iswindows()
+if haskey(ENV, "RUN_TEST_SERVER_IN_RUNTESTS") && ENV["RUN_TEST_SERVER_IN_RUNTESTS"] == "yes" && Sys.iswindows()
     # Run test server in background
     process = run(pipeline(`./test/go/`; stdout, stderr), wait = false)
     sleep(1)
