@@ -47,9 +47,6 @@ jobs:
     - name: Build Go gRPC Test Server
       run: go build -o grpc_test_server .
       working-directory: test/go
-    - name: Run Go gRPC Test Server
-      run: ./grpc_test_server &
-      working-directory: test/go
     - uses: julia-actions/setup-julia@v1
       with:
         version: ${{ matrix.version }}
@@ -68,7 +65,7 @@ jobs:
     - uses: julia-actions/julia-runtest@v1
       timeout-minutes: 5
       env: 
-        RUN_TEST_SERVER_IN_RUNTESTS: "yes"
+        JULIA_GRPCCLIENT_TEST_START_GO_SERVER: "yes"
     - name: Stop Go gRPC Test Server
       run: killall grpc_test_server
     - uses: julia-actions/julia-processcoverage@v1
