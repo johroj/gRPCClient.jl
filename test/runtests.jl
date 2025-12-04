@@ -40,6 +40,7 @@ include("gen/test/test_pb.jl")
         requests = Vector{gRPCRequest}()
         for i = 1:1
             request = grpc_async_request(client, TestRequest(i, zeros(UInt64, i)))
+            @show i
             push!(requests, request)
         end
 
