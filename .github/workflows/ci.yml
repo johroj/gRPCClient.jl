@@ -58,7 +58,7 @@ jobs:
       uses: astral-sh/setup-uv@v7
     - name: Run Python gRPC Test Server
       if: matrix.os == 'windows-latest'
-      run: uv run ./grpc_test_server.py
+      run: uv run ./grpc_test_server.py &
       working-directory: test/python
     - uses: julia-actions/setup-julia@v1
       with:
