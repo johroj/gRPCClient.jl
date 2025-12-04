@@ -528,7 +528,8 @@ function socket_callback(
                     close(watcher.fdw)
 
                     # Update the FDWatcher with the new flags
-                    watcher.fdw = FDWatcher(OS_HANDLE(sock), readable, writable)
+                    watcher.fdw =
+                        FDWatcher(CROSS_PLATFORM_OS_HANDLE(sock), readable, writable)
 
                     # Start waiting on the socket with the new flags
                     notify(watcher.ready)
@@ -536,7 +537,10 @@ function socket_callback(
                     nothing
                 else
                     # Don't have a watcher, create one and start a task
-                    watcher = CURLWatcher(sock, FDWatcher(OS_HANDLE(sock), readable, writable))
+                    watcher = CURLWatcher(
+                        sock,
+                        FDWatcher(CROSS_PLATFORM_OS_HANDLE(sock), readable, writable),
+                    )
                     grpc.watchers[sock] = watcher
 
                     watcher
