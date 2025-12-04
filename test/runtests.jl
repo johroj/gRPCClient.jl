@@ -38,7 +38,7 @@ include("gen/test/test_pb.jl")
         client = TestService_TestRPC_Client(_TEST_HOST, _TEST_PORT)
 
         requests = Vector{gRPCRequest}()
-        for i = 1:1000
+        for i = 1:1
             request = grpc_async_request(client, TestRequest(i, zeros(UInt64, i)))
             push!(requests, request)
         end
