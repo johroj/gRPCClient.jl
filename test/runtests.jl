@@ -29,6 +29,7 @@ if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_SERVER")
             contains(lowercase(line), "failed") && throw(ErrorException("Failed to start gRPC test server"))
             time() > t1 + 10 && throw(ErrorException("Failed to start gRPC test server due to time-out"))
         end
+        sleep(0.01)
     elseif ENV["JULIA_GRPCCLIENT_TEST_START_SERVER"] == "false"
         nothing
     else
