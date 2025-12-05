@@ -6,13 +6,33 @@ using Base.Threads
 # Import the timeout header formatting function for testing
 import gRPCClient: grpc_timeout_header_val, GRPC_DEADLINE_EXCEEDED
 
-
-if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_GO_SERVER") && ENV["JULIA_GRPCCLIENT_TEST_START_GO_SERVER"] == "yes"
-    # Run test server in background
-    process = run(pipeline(`./go/grpc_test_server`; stdout, stderr), wait = false)
-    sleep(1)
-    finalizer(process) do x
-        kill(x)
+# This is primarily used for starting the server when running CI.
+# By launching the server asynchronously within julia, we ensure
+# that the server is active while testing, which otherwise would require
+# scheduling a task on windows CI. 
+if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_SERVER") 
+    if ENV["JULIA_GRPCCLIENT_TEST_START_SERVER"] == "go"
+        pipe = Pipe()
+        process = run(pipeline(`./go/grpc_test_server`; stdout = pipe, stderr = pipe), wait = false)
+        finalizer(process) do x
+            kill(x)
+        end
+        
+        # Display the prints from the server and
+        # wait until it is properly launched before proceeding with requests
+        t1 = time()
+        while true
+            line = readline(pipe)
+            println(line)
+            contains(line, "gRPC server started") && break
+            contains(lowercase(line), "error") && throw(ErrorException("Failed to start gRPC test server"))
+            contains(lowercase(line), "failed") && throw(ErrorException("Failed to start gRPC test server"))
+            time() > t1 + 10 && throw(ErrorException("Failed to start gRPC test server due to time-out"))
+        end
+    elseif ENV["JULIA_GRPCCLIENT_TEST_START_SERVER"] == "false"
+        nothing
+    else
+        throw(ErrorException("Unsupported option for JULIA_GRPCCLIENT_TEST_START_SERVER: $(ENV["JULIA_GRPCCLIENT_TEST_START_SERVER"])"))
     end
 end
 
