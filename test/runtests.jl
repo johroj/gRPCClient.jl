@@ -22,14 +22,11 @@ if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_SERVER")
         # wait until it is properly launched before proceeding with requests
         t1 = time()
         while true
-            if bytesavailable(pipe) > 0
-                line = readline(pipe)
-                println(line)
-                contains(line, "gRPC server started") && break
-                contains(lowercase(line), "error") && throw(ErrorException("Failed to start gRPC test server"))
-                contains(lowercase(line), "failed") && throw(ErrorException("Failed to start gRPC test server"))
-            end
-            sleep(0.001)
+            line = readline(pipe)
+            println(line)
+            contains(line, "gRPC server started") && break
+            contains(lowercase(line), "error") && throw(ErrorException("Failed to start gRPC test server"))
+            contains(lowercase(line), "failed") && throw(ErrorException("Failed to start gRPC test server"))
             time() > t1 + 10 && throw(ErrorException("Failed to start gRPC test server due to time-out"))
         end
         sleep(0.01)
