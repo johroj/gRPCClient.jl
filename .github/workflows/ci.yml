@@ -47,6 +47,11 @@ jobs:
     - name: Build Go gRPC Test Server
       run: go build -o grpc_test_server .
       working-directory: test/go
+    - name: Rename Go executable
+      if: matrix.os == 'windows-latest'
+      run: mv grpc_test_server grpc_test_server.exe
+      shell: pwsh
+      working-directory: test/go
     - uses: julia-actions/setup-julia@v1
       with:
         version: ${{ matrix.version }}
