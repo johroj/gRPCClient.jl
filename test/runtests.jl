@@ -21,8 +21,9 @@ if haskey(ENV, "JULIA_GRPCCLIENT_TEST_START_SERVER")
         # Display the prints from the server and
         # wait until it is properly launched before proceeding with requests
         t1 = time()
+        println("Starting Go server...")
         while true
-            line = readline(pipe)
+            line = readline(pipe) # blocking
             println(line)
             contains(line, "gRPC server started") && break
             contains(lowercase(line), "error") && throw(ErrorException("Failed to start gRPC test server"))
