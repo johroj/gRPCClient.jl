@@ -2,6 +2,8 @@ function service_codegen_handler(io, t::ServiceType, ctx::Context)
     namespace = join(ctx.proto_file.preamble.namespace, ".")
     service_name = t.name
 
+    println(io, "import gRPCClient")
+    println(io)
 
     for rpc in t.rpcs
         rpc_path = "/$namespace.$service_name/$(rpc.name)"
@@ -19,14 +21,14 @@ function service_codegen_handler(io, t::ServiceType, ctx::Context)
         println(io, "$(service_name)_$(rpc.name)_Client(")
         println(io, "\thost, port;")
         println(io, "\tsecure=false,")
-        println(io, "\tgrpc=grpc_global_handle(),")
+        println(io, "\tgrpc=gRPCClient.grpc_global_handle(),")
         println(io, "\tdeadline=10,")
         println(io, "\tkeepalive=60,")
         println(io, "\tmax_send_message_length = 4*1024*1024,")
         println(io, "\tmax_recieve_message_length = 4*1024*1024,")
         println(
             io,
-            ") = gRPCServiceClient{$request_type, $(rpc.request_stream), $response_type, $(rpc.response_stream)}(",
+            ") = gRPCClient.gRPCServiceClient{$request_type, $(rpc.request_stream), $response_type, $(rpc.response_stream)}(",
         )
         println(io, "\thost, port, \"$rpc_path\";")
         println(io, "\tsecure=secure,")
