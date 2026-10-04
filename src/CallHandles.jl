@@ -87,10 +87,8 @@ function handle_channel_exception(ex, rpc, newex)
         grpc = rpc.req.grpc::gRPCCURL
         lock(grpc.lock) do
             if !isopen(rpc.req)
-                if !isnothing(rpc.req.ex)
-                    throw(rpc.req.ex)
-                end
-                throw(newex)
+                ex = grpc_request_exception(rpc.req)
+                throw(something(ex, newex))
             end
         end
     end
@@ -129,7 +127,10 @@ future calls to `detach` or `close`.
 """
 @inline function Base.detach(rpc::AbstractgRPCCall; throws::Bool = true)
     grpc = rpc.req.grpc::gRPCCURL
-    prev_ex = @lock grpc.lock rpc.req.ex
+
+    # If the request already has an exception, make sure we throw it
+    # after cancelling
+    prev_ex = @lock grpc.lock grpc_request_exception(rpc.req)
 
     grpc_cancel(rpc.req)
 
@@ -139,11 +140,8 @@ future calls to `detach` or `close`.
     isstreaming_request(rpc) && close(rpc.request_channel)
     isstreaming_response(rpc) && close(rpc.response_channel)
 
-    # If the call got cancelled by this call to `detach`, we
-    # also want to throw any exception that already existed.
-    if throws && !isnothing(prev_ex)
-        throw(prev_ex)
-    end
+    throws && !isnothing(prev_ex) && throw(prev_ex)
+
     return nothing
 end
 
@@ -165,7 +163,7 @@ completion rather than guarding on this.
     try
         put!(rpc.request_channel, msg)
     catch ex
-        handle_channel_exception(ex, rpc, gRPCServiceCallException(GRPC_OK, "Call has already been completed."))
+        handle_channel_exception(ex, rpc, gRPCServiceCallException(GRPC_OK, "Call has already been completed and will not accept more requests."))
     end
     done && close(rpc.request_channel)
     return nothing
@@ -237,8 +235,7 @@ end
 Waits for an RPC with unary response to be ready to return its response. 
 """
 @inline function Base.wait(rpc::UnaryResponseRPC)
-    wait(rpc.req)
-    !isnothing(rpc.req.ex) && throw(rpc.req.ex)
+    grpc_async_await(rpc.req)
     return nothing
 end
 
@@ -253,7 +250,8 @@ failed; use `isopen(rpc)` to test for completion, then `fetch` (which returns th
 response or throws the error).
 """
 @inline function Base.isready(rpc::UnaryResponseRPC)
-    return !isopen(rpc) && isnothing(rpc.req.ex)
+    # calling grpc_request_exception without lock is safe after the rpc is done
+    return !isopen(rpc) && isnothing(grpc_request_exception(rpc.req))
 end
 
 """
@@ -270,14 +268,11 @@ available to [`take!`](@ref), `false` means the stream has ended.
     try
         wait(rpc.response_channel)
     catch ex
-        (ex isa InvalidStateException && ex.state === :closed) || rethrow()
-        # The response channel is closed: a failed call re-raises its exception here,
-        # while a clean end of stream returns normally.
-        grpc = rpc.req.grpc::gRPCCURL
-        lock(grpc.lock) do
-            if !isopen(rpc.req)
-                isnothing(rpc.req.ex) || throw(rpc.req.ex)
-            end
+        # If channel was closed, first try to throw an error from the call itself
+        if (ex isa InvalidStateException && ex.state === :closed) 
+            grpc_async_await(rpc.req) # Does not throw if the call was completed without errors!
+        else
+            rethrow()
         end
     end
     return nothing

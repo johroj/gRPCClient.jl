@@ -747,14 +747,14 @@ include("gen/test/test_pb.jl")
             put!(rpc, TestRequest(1, [1]))
             put!(rpc, TestRequest(1, [1]), done = true)
             @test :ok == timedwait(() -> !isopen(rpc), 0.1, pollint = 0.001)
-            @test_throws "Call has already been completed." put!(rpc, TestRequest(1, [1]))
+            @test_throws "Call has already been completed and will not accept more requests." put!(rpc, TestRequest(1, [1]))
 
             rpc = TestService.TestBidirectionalStreamRPC(chan)
             put!(rpc, TestRequest(1, [1]))
             put!(rpc, TestRequest(1, [1]))
             put!(rpc, done = true)
             @test :ok == timedwait(() -> !isopen(rpc), 0.1, pollint = 0.001)
-            @test_throws "Call has already been completed." put!(rpc, TestRequest(1, [1]))
+            @test_throws "Call has already been completed and will not accept more requests." put!(rpc, TestRequest(1, [1]))
         end
 
         @testset "Testing fetch and take!" begin
